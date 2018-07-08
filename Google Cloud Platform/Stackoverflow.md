@@ -109,3 +109,16 @@ with beam.Pipeline() as p:
            project='doubleclick-2', schema=ads_schema))
       #| WriteToText('test.csv'))
 ```
+
+### 5. How to read BigQuery table using python pipeline code in GCP Dataflow
+Links: https://stackoverflow.com/questions/48386148/how-to-read-bigquery-table-using-python-pipeline-code-in-gcp-dataflow
+```
+Reading From BigQuery
+> rows = (p | 'ReadFromBQ' >> beam.io.Read(beam.io.BigQuerySource(query=QUERY, use_standard_sql=True))
+
+Writing to BigQuery
+> rows | 'writeToBQ' >> beam.io.Write(
+beam.io.BigQuerySink('{}:{}.{}'.format(PROJECT, BQ_DATASET_ID, BQ_TEST), schema='CONVERSATION:STRING, LEAD_ID:INTEGER', create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
+    write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE))
+
+```

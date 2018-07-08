@@ -29,3 +29,48 @@ As an aside, I use the Anaconda distribution for almost all of my python coding 
 As of 7/20/17 you cannot use the anaconda repos to install the necessary GCP components. Hoping to work 
 with the Continuum folks to have this resolved not just for Apache Beam but also for Tensorflow.
 ```
+
+### 3. Dataflow BigQuery to BigQuery
+
+Links: https://stackoverflow.com/questions/49265480/dataflow-bigquery-to-bigquery
+```
+from __future__ import absolute_import
+
+import argparse
+import logging
+
+import apache_beam as beam
+
+PROJECT='experimental'
+BUCKET='temp1/python2'
+
+
+def run():
+    argv = [
+            '--project={0}'.format(PROJECT),
+            '--job_name=test1',
+            '--save_main_session',
+            '--staging_location=gs://{0}/staging/'.format(BUCKET),
+            '--temp_location=gs://{0}/staging/'.format(BUCKET),
+            '--runner=DataflowRunner'
+    ]
+
+    with beam.Pipeline(argv=argv) as p:
+
+        # Read the table rows into a PCollection.
+        rows = p | 'read' >> beam.io.Read(beam.io.BigQuerySource(query =  'Select * from `table.orders` where paid = false limit 10', use_standard_sql=True))
+
+        # Write the output using a "Write" transform that has side effects.
+        rows  | 'Write' >> beam.io.WriteToBigQuery(
+                table='orders_test',
+                dataset='external',
+                project='experimental',
+                schema='field1:type1,field2:type2,field3:type3',
+                create_disposition=beam.io.BigQueryDisposition.CREATE_IF_NEEDED,
+                write_disposition=beam.io.BigQueryDisposition.WRITE_TRUNCATE)
+
+
+if __name__ == '__main__':
+    logging.getLogger().setLevel(logging.INFO)
+    run()
+```

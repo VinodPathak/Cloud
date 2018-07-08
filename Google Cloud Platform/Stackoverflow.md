@@ -74,3 +74,38 @@ if __name__ == '__main__':
     logging.getLogger().setLevel(logging.INFO)
     run()
 ```
+### 4. how-to-write-dictionaries-to-bigquery-in-dataflow-using-python
+Link: https://stackoverflow.com/questions/47379190/how-to-write-dictionaries-to-bigquery-in-dataflow-using-python
+```
+ads_schema='Advertiser_ID:INTEGER,Campaign_ID:INTEGER,Ad_ID:INTEGER,Ad_Name:STRING,Click_through_URL:STRING,Ad_Type:STRING'
+
+class BuildAdsRecordFn(beam.DoFn):
+    def __init__(self):
+      super(BuildAdsRecordFn, self).__init__()
+
+    def process(self, element):
+      text_line = element.strip()
+      ads_record = self.process_row(element)      
+      return ads_record
+
+    def process_row(self, row):
+        dict_ = {}
+
+        record = row.split(",")
+        dict_['Advertiser_ID'] = int(record[0]) if record[0] else None
+        dict_['Campaign_ID'] = int(record[1]) if record[1] else None
+        dict_['Ad_ID'] = int(record[2]) if record[2] else None
+        dict_['Ad_Name'] = record[3]
+        dict_['Click_through_URL'] = record[4]
+        dict_['Ad_Type'] = record[5]
+        return [dict_]
+
+with beam.Pipeline() as p:
+
+    (p | ReadFromText("gs://bucket/file.csv")
+       | beam.Filter(lambda x: x[0] != 'A')
+       | (beam.ParDo(BuildAdsRecordFn()))
+       | WriteToBigQuery('ads_table', dataset='dds',
+           project='doubleclick-2', schema=ads_schema))
+      #| WriteToText('test.csv'))
+```
